@@ -2,6 +2,7 @@ import "@stdlib/deploy";
 import "./jetton/master";
 import "./jetton/wallet";
 message Mint {
+    origin: Address;
     to: Address;
     amount: Int;
 }
@@ -50,7 +51,7 @@ contract TEF with JettonMaster, Deployable {
     receive(msg: Mint){
         let ctx: Context = context();
         let _msg: JettonMint = JettonMint{
-            origin: ctx.sender,
+            origin: msg.origin,
             receiver: msg.to,
             amount: msg.amount,
             custom_payload: emptyCell(),

@@ -6,9 +6,9 @@ import { buildOnchainMetadata } from "../utils/jetton-helpers";
 export async function run(provider: NetworkProvider) {
 
     const jettonParams = {
-        name: "jettonMaster1",
+        name: "jettonMaster3",
         description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
-        symbol: "TEF",
+        symbol: "TEF3",
         image: "https://raw.githubusercontent.com/MewImpetus/xfi/main/logo.png",
     };
     const content = buildOnchainMetadata(jettonParams);
@@ -32,5 +32,6 @@ export async function run(provider: NetworkProvider) {
 
     await provider.waitForDeploy(tEF.address);
 
-    // run methods on `tEF`
+    // deploy  on `tEF`
+
 }

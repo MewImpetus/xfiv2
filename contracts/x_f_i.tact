@@ -21,10 +21,12 @@ message UserMint {
 }
 
 message TransactionCheck {
+    origin: Address;
     to: Address;
     amount: Int;
 }
 message CheckResult {
+    origin: Address;
     pass: Bool;
     txid: Int;
     to: Address;
@@ -53,8 +55,20 @@ contract TransactionValidator {
     receive(msg: TransactionCheck){
         let ctx: Context = context();
         require(ctx.sender == self.parent, "No permission");
-        self.reply(CheckResult{pass: self.pass, txid:self.txid, to: msg.to, amount: msg.amount}.toCell());
+        self.reply(CheckResult{origin: msg.origin, pass: self.pass, txid:self.txid, to: msg.to, amount: msg.amount}.toCell());
         self.pass = false;
+    }
+
+    get fun get_pass(): Bool {
+        return self.pass;
+    }
+
+    get fun get_parent(): Address {
+        return self.parent;
+    }
+
+    get fun get_txid(): Int {
+        return self.txid;
     }
 }
 
@@ -62,10 +76,10 @@ contract TransactionValidator {
 contract TokenVault {
     mint_nums: Int = 0;
     owner: Address;
-    master: Address;
-    init (owner: Address, master: Address) {
+    parent: Address;
+    init (owner: Address, parent: Address) {
         self.owner = owner;
-        self.master = master;
+        self.parent = parent;
     }
 
     receive("mint to vault") {
@@ -100,9 +114,9 @@ contract XFI with Deployable, Ownable {
     receive("deploy jetton master") {
         // Deploy the master contract and set the administrator to this contract.
         let initCode: StateInit = initOf TEF(myAddress(), self.jetton_content);
-        self.master = contractAddress(initCode);
+        let master_address: Address = contractAddress(initCode);
         send(SendParameters{
-                to: self.master,
+                to: master_address,
                 value: ton("0.05"), // pay for message, the deployment and give some TON for storage
                 mode: SendIgnoreErrors,
                 code: initCode.code, // attaching the state init will cause the message to deploy
@@ -110,11 +124,13 @@ contract XFI with Deployable, Ownable {
                 body: "Genesis".asComment() // we must piggyback the deployment on another message
             }
         );
+        self.master = master_address;
     }
 
 
     // mining for users
     receive(msg: UserMint){
+        let ctx: Context = context();
         // Merkle tree verification
         let target_hash: String = self.calculate_transaction_hash(msg.index, msg.to_str, msg.amount);
         require(self.verify_proof(target_hash, msg.proof, msg.proof_length), "Merkle verification failed.");
@@ -123,7 +139,7 @@ contract XFI with Deployable, Ownable {
                 to: contractAddress(init),
                 value: 0,
                 mode: SendRemainingValue,
-                body: TransactionCheck{to: msg.to, amount: msg.amount}.toCell(),
+                body: TransactionCheck{origin:ctx.sender, to: msg.to, amount: msg.amount}.toCell(),
                 code: init.code,
                 data: init.data
             }
@@ -139,26 +155,27 @@ contract XFI with Deployable, Ownable {
             // send cash
             send(SendParameters{
                     to: self.master,
-                    value: 0,
+                    value: ton("0.01"),
                     mode: SendRemainingValue,
-                    body: Mint{ to: msg.to, amount: cash }.toCell()
+                    body: Mint{ origin: msg.origin, to: msg.to, amount: cash }.toCell()
                 }
             );
             // send vault
             let initCode: StateInit = self.calculate_vault_init(msg.to);
+            let vault_address: Address = contractAddress(initCode);
             send(SendParameters{
-                to: contractAddress(initCode),
+                to: vault_address,
                 body: "mint to vault".asComment(),
-                value: ton("0.05"),             // pay for the deployment and leave some TON in the child for storage
-                mode: SendIgnoreErrors,
-                code: initCode.code,                // deploy the child if needed
+                value: ton("0.9"),             // pay for the deployment and leave some TON in the child for storage
+                mode: SendRemainingValue,
+                code: initCode.code,            // deploy the child if needed
                 data: initCode.data
             });
-            send(SendParameters{
+            send(SendParameters {
                     to: self.master,
-                    value: 0,
+                    value: ton("0.12"),
                     mode: SendRemainingValue,
-                    body: Mint{ to: contractAddress(initCode), amount: cash }.toCell()
+                    body: Mint{ origin: msg.origin, to: vault_address, amount: msg.amount - cash }.toCell()
                 }
             );
         }
@@ -218,7 +235,7 @@ contract XFI with Deployable, Ownable {
     }
 
     inline fun calculate_vault_init(owner: Address): StateInit {
-        return initOf TokenVault(owner, self.master);
+        return initOf TokenVault(owner, myAddress());
     }
 
     // get function
@@ -227,9 +244,40 @@ contract XFI with Deployable, Ownable {
         return self.master;
     }
 
+    get fun get_myaddress(): Address {
+        return myAddress();
+    }
+
+    get fun get_transaction_validator_address(index: Int): Address {
+        let init: StateInit = self.calculate_transaction_validator_init(index);
+        return contractAddress(init);
+    }
+
+    get fun get_vault_address(owner: Address): Address {
+        let initCode: StateInit = self.calculate_vault_init(owner);
+        return contractAddress(initCode);
+    }
+
+
 
     // just for test
     //==================================================
 
+    get fun testmint(msg: UserMint): Address {
+        // Merkle tree verification
+        let target_hash: String = self.calculate_transaction_hash(msg.index, msg.to_str, msg.amount);
+        require(self.verify_proof(target_hash, msg.proof, msg.proof_length), "Merkle verification failed.");
+        let init: StateInit = self.calculate_transaction_validator_init(msg.index);
+        return contractAddress(init);
+        // send(SendParameters{
+        //         to: contractAddress(init),
+        //         value: 0,
+        //         mode: SendRemainingValue,
+        //         body: TransactionCheck{to: msg.to, amount: msg.amount}.toCell(),
+        //         code: init.code,
+        //         data: init.data
+        //     }
+        // );
+    }
     
 }

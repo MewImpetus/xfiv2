@@ -37,4 +37,13 @@ export async function run(provider: NetworkProvider) {
     await provider.waitForDeploy(xFI.address);
 
     // run methods on `xFI`
+
+    await xFI.send(
+        provider.sender(),
+        {
+            value: toNano('0.5'),
+        },
+        "deploy jetton master"
+    );
+
 }
