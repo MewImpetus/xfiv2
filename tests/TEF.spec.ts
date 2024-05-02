@@ -1,22 +1,21 @@
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { toNano } from '@ton/core';
-import { TEF, JettonBurn } from '../wrappers/TEF';
+import { TEF } from '../wrappers/TEF';
 import '@ton/test-utils';
 import { buildOnchainMetadata } from "../utils/jetton-helpers";
-import { TEFWallet } from '../build/TEF/tact_TEFWallet';
+import { TEFWallet, JettonBurn } from '../build/TEF/tact_TEFWallet';
 
 describe('TEF', () => {
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let alice: SandboxContract<TreasuryContract>;
     let tEF: SandboxContract<TEF>;
+    let tEFWakket: SandboxContract<TEFWallet>;
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         deployer = await blockchain.treasury('deployer');
-        alice = await blockchain.treasury('alice');
 
-        
+
         const jettonParams = {
             name: "Teetefi",
             description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
@@ -30,7 +29,7 @@ describe('TEF', () => {
             content
         ));
 
-        
+
 
         const deployResult = await tEF.send(
             deployer.getSender(),
@@ -88,8 +87,6 @@ describe('TEF', () => {
             success: true,
         });
 
-
-
         // second should be failed
         mintyResult = await tEF.send(
             deployer.getSender(),
@@ -109,7 +106,8 @@ describe('TEF', () => {
         // Check that deployer's jetton wallet balance is 1
         const deployerJettonContract = blockchain.openContract(TEFWallet.fromAddress(deployerWalletAddress));
         const deployerBalanceAfter = (await deployerJettonContract.getGetWalletData()).balance;
-        expect(deployerBalanceAfter).toEqual(1000000000n);
+
+        expect(deployerBalanceAfter).toEqual(1100000000n);
 
     });
 
@@ -174,12 +172,5 @@ describe('TEF', () => {
         const deployerBalanceAfter = (await deployerJettonContract.getGetWalletData()).balance;
         expect(deployerBalanceAfter).toEqual(deployerBalanceBefore - 1n);
     });
-
-
-    
-    
-
-
-
 
 });

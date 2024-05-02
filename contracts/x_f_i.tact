@@ -137,7 +137,7 @@ contract XFI with Deployable, Ownable {
         let init: StateInit = self.calculate_transaction_validator_init(msg.index);
         send(SendParameters{
                 to: contractAddress(init),
-                value: 0,
+                value: ton("0.02"),
                 mode: SendRemainingValue,
                 body: TransactionCheck{origin:ctx.sender, to: msg.to, amount: msg.amount}.toCell(),
                 code: init.code,
@@ -155,7 +155,7 @@ contract XFI with Deployable, Ownable {
             // send cash
             send(SendParameters{
                     to: self.master,
-                    value: ton("0.01"),
+                    value: ton("0.05"),
                     mode: SendRemainingValue,
                     body: Mint{ origin: msg.origin, to: msg.to, amount: cash }.toCell()
                 }
@@ -166,7 +166,7 @@ contract XFI with Deployable, Ownable {
             send(SendParameters{
                 to: vault_address,
                 body: "mint to vault".asComment(),
-                value: ton("0.9"),             // pay for the deployment and leave some TON in the child for storage
+                value: ton("0.08"),             // pay for the deployment and leave some TON in the child for storage
                 mode: SendRemainingValue,
                 code: initCode.code,            // deploy the child if needed
                 data: initCode.data

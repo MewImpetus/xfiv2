@@ -8,7 +8,7 @@ export async function run(provider: NetworkProvider) {
     const jettonParams = {
         name: "jettonMaster3",
         description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
-        symbol: "TEF3",
+        symbol: "TEF4",
         image: "https://raw.githubusercontent.com/MewImpetus/xfi/main/logo.png",
     };
     const content = buildOnchainMetadata(jettonParams);

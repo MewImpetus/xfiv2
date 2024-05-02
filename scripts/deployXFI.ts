@@ -6,9 +6,9 @@ import { buildOnchainMetadata } from "../utils/jetton-helpers";
 export async function run(provider: NetworkProvider) {
 
     const jettonParams = {
-        name: "jettonMaster1",
+        name: "jettonMaster4",
         description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
-        symbol: "TEF",
+        symbol: "TEF5",
         image: "https://raw.githubusercontent.com/MewImpetus/xfi/main/logo.png",
     };
     const content = buildOnchainMetadata(jettonParams);
@@ -23,18 +23,18 @@ export async function run(provider: NetworkProvider) {
         minted_today: 0n,
     }));
 
-    await xFI.send(
-        provider.sender(),
-        {
-            value: toNano('0.05'),
-        },
-        {
-            $$type: 'Deploy',
-            queryId: 0n,
-        }
-    );
+    // await xFI.send(
+    //     provider.sender(),
+    //     {
+    //         value: toNano('0.05'),
+    //     },
+    //     {
+    //         $$type: 'Deploy',
+    //         queryId: 0n,
+    //     }
+    // );
 
-    await provider.waitForDeploy(xFI.address);
+    // await provider.waitForDeploy(xFI.address);
 
     // run methods on `xFI`
 

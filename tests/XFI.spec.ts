@@ -79,7 +79,7 @@ describe('XFI', () => {
         const masterdeployResult = await xFI.send(
             deployer.getSender(),
             {
-                value: toNano('5'),
+                value: toNano('1.5'),
             },
             "deploy jetton master"
         );
@@ -142,7 +142,6 @@ describe('XFI', () => {
             proof_length: 2n,
             to_str: "UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs",
         })
-        console.log("res:", res)
 
         // 2.  xfi -> uniqueness verification
         const exist_check_address = await xFI.getGetTransactionValidatorAddress(123n)
@@ -194,8 +193,6 @@ describe('XFI', () => {
 
         //7. master -> vault
         const vaultWallet = await tEF.getGetWalletAddress(vaultContractAddress)
-        console.log("vaultContractAddress:", vaultContractAddress)
-        console.log("vaultWallet:", vaultWallet)
         expect(mintResult.transactions).toHaveTransaction({
             from: masterAfter,
             to: vaultWallet,
