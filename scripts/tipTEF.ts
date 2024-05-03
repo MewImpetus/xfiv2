@@ -8,8 +8,8 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider, args: string[]) {
     const ui = provider.ui();
 
-    const agent_address = Address.parse("EQCbW4LsshEROfk_ip3e-ROTV-8A677Vc1IaiDx701kR8G89");
-    const tef_master_address = Address.parse("0QAUrbgTE2CFri5IsVxZLYrBBLgIqRelMvcWIi-3mekQsQP-");
+    const agent_address = Address.parse("EQDnjzyoV7fWSh6TrpC-U1BGLBBvOCXogdCy8kl4nvLlvFQg");
+    const tef_master_address = Address.parse("0QDJ_8-DRLoS9IogLyjoDuh3bGFSLobfQPGT4TfjNi1lmCx5");
 
 
     const xFI = provider.open(XFI.fromAddress(agent_address));
@@ -34,7 +34,7 @@ export async function run(provider: NetworkProvider, args: string[]) {
             query_id: 0n,
             amount: toNano(2000),
             destination: Address.parse("UQAQIFfuMdPuWacwN93eD-jJU9f8uUpjAGE1HGtiHyM7274s"),
-            response_destination: provider.sender().address!!,
+            response_destination: Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"),
             forward_payload: beginCell().endCell()
         }
     );

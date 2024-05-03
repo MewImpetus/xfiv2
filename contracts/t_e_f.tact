@@ -40,7 +40,7 @@ contract TEF with JettonMaster, Deployable {
         let msg: JettonMint = JettonMint{
             origin: ctx.sender,
             receiver: ctx.sender,
-            amount: ton("0.9999"),
+            amount: ton("0.99999"),
             custom_payload: emptyCell(),
             forward_ton_amount: 0,
             forward_payload: emptySlice()
