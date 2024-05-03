@@ -132,7 +132,7 @@ contract TokenVault {
         // TODO transfer 90%
         send(SendParameters{
             to: my_wallet,
-            value: ton("0.08"),
+            value: ton("0.1"),
             mode: SendPayGasSeparately,
             body: JettonTransfer {
                 query_id: msg.query_id,
@@ -140,7 +140,7 @@ contract TokenVault {
                 destination: msg.destination,
                 response_destination: ctx.sender,
                 custom_payload: emptyCell(),
-                forward_ton_amount: 0,
+                forward_ton_amount: ton("0.01"),
                 forward_payload: msg.forward_payload
             }.toCell()
         });
@@ -304,7 +304,7 @@ contract XFI with Deployable, Ownable {
     }
 
     // change some settings
-    //==================================================
+    
     receive(msg: MerkleRoot) {
         require(sender() == self.mint_config.admin, "Merkle Admin use only");
         require(now() - self.mint_config.set_at > self.mint_config.set_interval, "Setting Time Not Yet Cooled Down");

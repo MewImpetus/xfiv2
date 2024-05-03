@@ -237,7 +237,7 @@ describe('XFI', () => {
         const tipResult = await vaultContract.send(
             alice.getSender(),
             {
-                value: toNano('2'),
+                value: toNano('1'),
             },
             {
                 $$type: "Tip",
@@ -263,6 +263,15 @@ describe('XFI', () => {
             success: true,
         });
 
+
+        // just for debug print
+        console.log("vaultWallet", vaultWallet)
+        console.log("vaultContractAddress", vaultContractAddress)
+        console.log("targetWalletAddress", targetWalletAddress)
+        console.log("master", masterAfter)
+        console.log("alice", alice.address)
+        console.log("deployer", deployer.address)
+
         // 3. vault's Wallet -> deployer's wallet address
         const deployerWallet = await tEF.getGetWalletAddress(deployer.address)
         expect(tipResult.transactions).toHaveTransaction({
@@ -272,6 +281,13 @@ describe('XFI', () => {
         });
 
         // 4. notify and excess
+
+        // notify deployer
+        expect(tipResult.transactions).toHaveTransaction({
+            from: deployerWallet,
+            to: deployer.address,
+            success: true,
+        });
 
         // excess alice
         expect(tipResult.transactions).toHaveTransaction({
@@ -296,12 +312,12 @@ describe('XFI', () => {
 
 
         // just for debug print
-        // console.log("vaultWallet", vaultWallet)
-        // console.log("vaultContractAddress", vaultContractAddress)
-        // console.log("targetWalletAddress", targetWalletAddress)
-        // console.log("master", masterAfter)
-        // console.log("alice", alice.address)
-        // console.log("deployer", deployer.address)
+        console.log("vaultWallet", vaultWallet)
+        console.log("vaultContractAddress", vaultContractAddress)
+        console.log("targetWalletAddress", targetWalletAddress)
+        console.log("master", masterAfter)
+        console.log("alice", alice.address)
+        console.log("deployer", deployer.address)
 
     });
 
