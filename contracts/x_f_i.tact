@@ -132,7 +132,7 @@ contract TokenVault {
         // TODO transfer 90%
         send(SendParameters{
             to: my_wallet,
-            value: ton("0.1"),
+            value: context().value - ton("0.1"),
             mode: SendPayGasSeparately,
             body: JettonTransfer {
                 query_id: msg.query_id,
@@ -183,7 +183,7 @@ contract XFI with Deployable, Ownable {
         send(SendParameters{
                 to: master_address,
                 value: ton("0.05"), // pay for message, the deployment and give some TON for storage
-                mode: SendIgnoreErrors,
+                mode: SendRemainingValue,
                 code: initCode.code, // attaching the state init will cause the message to deploy
                 data: initCode.data,
                 body: "Genesis".asComment() // we must piggyback the deployment on another message

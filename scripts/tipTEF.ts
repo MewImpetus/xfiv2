@@ -8,8 +8,8 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider, args: string[]) {
     const ui = provider.ui();
 
-    const agent_address = Address.parse("EQDnjzyoV7fWSh6TrpC-U1BGLBBvOCXogdCy8kl4nvLlvFQg");
-    const tef_master_address = Address.parse("0QDJ_8-DRLoS9IogLyjoDuh3bGFSLobfQPGT4TfjNi1lmCx5");
+    const agent_address = Address.parse("EQDhthruapwuo_Lx96MW2tNBx6RYOEvHz7q1pSXrUR4M_dup");
+    const tef_master_address = Address.parse("0QDkaa8AJPl3_n2v-UBBUUNXWbsUH9xev21p3dN0KPCxeDIo");
 
 
     const xFI = provider.open(XFI.fromAddress(agent_address));

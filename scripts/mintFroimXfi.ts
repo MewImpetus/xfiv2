@@ -5,7 +5,7 @@ import { NetworkProvider } from '@ton/blueprint';
 export async function run(provider: NetworkProvider, args: string[]) {
     const ui = provider.ui();
 
-    const address = Address.parse("EQDnjzyoV7fWSh6TrpC-U1BGLBBvOCXogdCy8kl4nvLlvFQg");
+    const address = Address.parse("EQDhthruapwuo_Lx96MW2tNBx6RYOEvHz7q1pSXrUR4M_dup");
 
 
     const xFI = provider.open(XFI.fromAddress(address));
