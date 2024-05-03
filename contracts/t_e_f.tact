@@ -23,12 +23,14 @@ contract TEFWallet with JettonWallet {
 
 contract TEF with JettonMaster, Deployable {
     total_supply: Int as coins = 0;
+    max_supply: Int as coins;
     mintable: Bool = true;
     owner: Address;
     jetton_content: Cell;
     genesis: Bool = true;
-    init(owner: Address, jetton_content: Cell){
+    init(owner: Address, max_supply: Int, jetton_content: Cell){
         self.owner = owner;
+        self.max_supply = max_supply;
         self.jetton_content = jetton_content;
     }
 
@@ -38,7 +40,7 @@ contract TEF with JettonMaster, Deployable {
         let msg: JettonMint = JettonMint{
             origin: ctx.sender,
             receiver: ctx.sender,
-            amount: ton("1.1"),
+            amount: ton("1.2"),
             custom_payload: emptyCell(),
             forward_ton_amount: 0,
             forward_payload: emptySlice()
@@ -58,11 +60,18 @@ contract TEF with JettonMaster, Deployable {
             forward_ton_amount: 0,
             forward_payload: emptySlice()
         };
+        let next_supply:Int = self.total_supply + msg.amount;
+        require(self.max_supply - next_supply > 0 && next_supply > 0, "Exceeded the limit of supply");
         self._mint_validate(ctx, _msg);
         self._mint(ctx, _msg);
     }
 
     override inline fun calculate_jetton_wallet_init(owner_address: Address): StateInit {
         return initOf TEFWallet(owner_address, myAddress());
+    }
+
+
+    get fun get_max_supply(): Int {
+        return self.max_supply;
     }
 }

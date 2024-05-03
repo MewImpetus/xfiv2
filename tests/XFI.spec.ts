@@ -16,7 +16,9 @@ describe('XFI', () => {
     let cat: SandboxContract<TreasuryContract>;
     let xFI: SandboxContract<XFI>;
     let tV: SandboxContract<TransactionValidator>;
-    let TokenVault: SandboxContract<TokenVault>;
+    let tokenVault: SandboxContract<TokenVault>;
+    
+    const merkle_root = "147596663615302291649424969521479109454"
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
@@ -24,7 +26,7 @@ describe('XFI', () => {
         alice = await blockchain.treasury('alice');
         bob = await blockchain.treasury('bob');
         cat = await blockchain.treasury('cat');
-
+        
         const jettonParams = {
             name: "jettonMaster1",
             description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
@@ -36,12 +38,13 @@ describe('XFI', () => {
 
         xFI = blockchain.openContract(await XFI.fromInit(content, {
             $$type: "MintConfig",
-            merkle_root: "147596663615302291649424969521479109454",
+            merkle_root: merkle_root,
             set_at: 0n,
             set_interval: 24n,
             admin: alice.address,
-            max_mint_today: toNano(10000000),
+            max_mint_today: toNano('10000000'),
             minted_today: 0n,
+            max_supply: toNano('1000000000')
         }));
 
 
@@ -79,11 +82,10 @@ describe('XFI', () => {
         const masterdeployResult = await xFI.send(
             deployer.getSender(),
             {
-                value: toNano('1.5'),
+                value: toNano('2'),
             },
             "deploy jetton master"
         );
-
 
         expect(masterdeployResult.transactions).toHaveTransaction({
             from: deployer.address,
@@ -104,11 +106,11 @@ describe('XFI', () => {
         // Send mining message.
         let cell2: Cell = beginCell()
             .storeUint(172282571249944562391355093940656328312n, 128)
-            .storeUint(1, 1).endCell();
+            .storeUint(0, 1).endCell();
 
         let cell1: Cell = beginCell().storeRef(cell2)
             .storeUint(144943127676063095663117939959419744222n, 128)
-            .storeUint(1, 1).endCell();
+            .storeUint(0, 1).endCell();
 
         const mintResult = await xFI.send(
             deployer.getSender(),
@@ -118,7 +120,7 @@ describe('XFI', () => {
             {
                 $$type: "UserMint",
                 index: 123n,
-                to: Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"),
+                to: alice.address,
                 amount: toNano(10000),
                 proof: cell1,
                 proof_length: 2n,
@@ -133,15 +135,18 @@ describe('XFI', () => {
             success: true,
         });
 
-        const res = await xFI.getTestmint({
+        // check is the generation of the Merkle tree root consistent
+        // TODO to remove
+        const root_hash = await xFI.getTestMerkle({
             $$type: "UserMint",
             index: 123n,
-            to: Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"),
+            to: alice.address,
             amount: toNano(10000),
             proof: cell1,
             proof_length: 2n,
             to_str: "UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs",
         })
+        expect(root_hash).toEqual(merkle_root)
 
         // 2.  xfi -> uniqueness verification
         const exist_check_address = await xFI.getGetTransactionValidatorAddress(123n)
@@ -176,7 +181,7 @@ describe('XFI', () => {
 
         // 5. master contract -> the target wallet address.
         const tEF = blockchain.openContract(TEF.fromAddress(masterAfter))
-        const targetWalletAddress = await tEF.getGetWalletAddress(Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"));
+        const targetWalletAddress = await tEF.getGetWalletAddress(alice.address);
         expect(mintResult.transactions).toHaveTransaction({
             from: masterAfter,
             to: targetWalletAddress,
@@ -184,7 +189,7 @@ describe('XFI', () => {
         });
 
         // 6. xfi -> vault  for deploy
-        const vaultContractAddress = await xFI.getGetVaultAddress(Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"))
+        const vaultContractAddress = await xFI.getGetVaultAddress(alice.address)
         expect(mintResult.transactions).toHaveTransaction({
             from: xFI.address,
             to: vaultContractAddress,
@@ -198,6 +203,11 @@ describe('XFI', () => {
             to: vaultWallet,
             success: true,
         });
+
+        // check vault token balance
+        const vaultContract = blockchain.openContract(TokenVault.fromAddress(vaultContractAddress))
+        const vault_token_balance = await vaultContract.getGetTokenBalance();
+        expect(vault_token_balance).toEqual(5000000000000n)
 
         // check balance
         const targetJettonContract = blockchain.openContract(TEFWallet.fromAddress(targetWalletAddress));
@@ -220,8 +230,78 @@ describe('XFI', () => {
             to: deployer.address,
             success: true,
         });
-       
 
+
+        //  test tip
+
+        const tipResult = await vaultContract.send(
+            alice.getSender(),
+            {
+                value: toNano('2'),
+            },
+            {
+                $$type: "Tip",
+                query_id: 0n,
+                amount: toNano(2000),
+                destination: deployer.address,
+                response_destination: alice.address,
+                forward_payload: beginCell().endCell()
+            }
+        );
+
+        // 1. alice -> vaultContractAddress
+        expect(tipResult.transactions).toHaveTransaction({
+            from: alice.address,
+            to: vaultContractAddress,
+            success: true,
+        });
+
+        // 2. vaultContractAddress -> vaultWalletAddress
+        expect(tipResult.transactions).toHaveTransaction({
+            from: vaultContractAddress,
+            to: vaultWallet,
+            success: true,
+        });
+
+        // 3. vault's Wallet -> deployer's wallet address
+        const deployerWallet = await tEF.getGetWalletAddress(deployer.address)
+        expect(tipResult.transactions).toHaveTransaction({
+            from: vaultWallet,
+            to: deployerWallet,
+            success: true,
+        });
+
+        // 4. notify and excess
+
+        // excess alice
+        expect(tipResult.transactions).toHaveTransaction({
+            from: deployerWallet,
+            to: alice.address,
+            success: true,
+        });
+        // check vault wallet Balance (minus 2000)
+        const vaultBalanceAfter = (await vaultJettonContract.getGetWalletData()).balance;
+        console.log("vaultBalanceAfter:", vaultBalanceAfter)
+        
+        // check deployer wallet balance (get 1800, because burns 2000)
+        const deployerWalletAddress = await tEF.getGetWalletAddress(deployer.address);
+        const deployerwalletContract = blockchain.openContract(TEFWallet.fromAddress(deployerWalletAddress));
+        const deployTokenBalance = (await deployerwalletContract.getGetWalletData()).balance;
+        expect(deployTokenBalance).toEqual(1800000000000n)
+
+        // check vault balance
+        const vault_token_balance_after = await vaultContract.getGetTokenBalance();
+        expect(vault_token_balance_after).toEqual(3000000000000n)
+
+
+
+        // just for debug print
+        // console.log("vaultWallet", vaultWallet)
+        // console.log("vaultContractAddress", vaultContractAddress)
+        // console.log("targetWalletAddress", targetWalletAddress)
+        // console.log("master", masterAfter)
+        // console.log("alice", alice.address)
+        // console.log("deployer", deployer.address)
 
     });
 });

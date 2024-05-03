@@ -9,7 +9,9 @@ struct MintConfig {
     admin : Address;
     max_mint_today : Int as uint64;  // Maximum mintable today
     minted_today : Int as uint64;   // minted amount today
+    max_supply: Int as coins;       // Max supply
 }
+
 
 message UserMint {
     index: Int;
@@ -33,12 +35,16 @@ message CheckResult {
     amount: Int;
 }
 
-message IncreaseBalance {
-    amount: Int;
+message VaultAmount {
+    value: Int;
 }
 
-message DecreaseBalance {
-    amount: Int;
+message Tip {
+    query_id: Int as uint64;
+    amount: Int as coins;
+    destination: Address; 
+    response_destination: Address;
+    forward_payload: Slice as remaining;
 }
 
 // Check if the transaction exists.
@@ -74,25 +80,69 @@ contract TransactionValidator {
 
 // save 50% mint token
 contract TokenVault {
-    mint_nums: Int = 0;
+    balance: Int = 0;
     owner: Address;
-    parent: Address;
-    init (owner: Address, parent: Address) {
+    jetton_master: Address;
+    init (owner: Address, master: Address) {
         self.owner = owner;
-        self.parent = parent;
+        self.jetton_master = master;
     }
 
-    receive("mint to vault") {
-        self.mint_nums = self.mint_nums + 1;
+    receive(msg: VaultAmount) {
+        self.balance = self.balance + msg.value;
+        require(self.balance >= 0, "Amount error");
     }
 
-    receive (msg: JettonTransfer) {
+    receive (msg: Tip) {
+        let ctx: Context = context();
+        require(ctx.sender == self.owner, "No permission");
+        require(ctx.sender != msg.destination, "Can not tip to self");
+        self.balance = self.balance - msg.amount;
+        require(self.balance >= 0, "Vault: Not enough jettons to transfer");
+        let burn: Int = msg.amount / 10;
+        let my_wallet: Address = self.get_jetton_wallet(myAddress());
         // TODO burn 10%
+        send(SendParameters{
+            to: my_wallet,
+            value: ton("0.03"),
+            mode: SendPayGasSeparately,
+            body: JettonBurn {
+                query_id: msg.query_id,
+                amount: burn,
+                response_destination: ctx.sender,
+                custom_payload: emptyCell()
+            }.toCell()
+        });
+
         // TODO transfer 90%
+        send(SendParameters{
+            to: my_wallet,
+            value: ton("0.08"),
+            mode: SendPayGasSeparately,
+            body: JettonTransfer {
+                query_id: msg.query_id,
+                amount: msg.amount - burn,
+                destination: msg.destination,
+                response_destination: ctx.sender,
+                custom_payload: emptyCell(),
+                forward_ton_amount: 0,
+                forward_payload: msg.forward_payload
+            }.toCell()
+        });
     }
 
-    get fun get_mint_nums(): Int {
-        return self.mint_nums;
+    inline fun get_jetton_wallet(owner_address: Address): Address {
+        let init: StateInit =  initOf TEFWallet(owner_address, self.jetton_master);
+        return contractAddress(init);
+    }
+
+
+    get fun get_token_balance(): Int {
+        return self.balance;
+    }
+
+    get fun get_ton_balance(): Int {
+        return myBalance();
     }
     
 }
@@ -113,7 +163,7 @@ contract XFI with Deployable, Ownable {
 
     receive("deploy jetton master") {
         // Deploy the master contract and set the administrator to this contract.
-        let initCode: StateInit = initOf TEF(myAddress(), self.jetton_content);
+        let initCode: StateInit = initOf TEF(myAddress(), self.mint_config.max_supply, self.jetton_content);
         let master_address: Address = contractAddress(initCode);
         send(SendParameters{
                 to: master_address,
@@ -152,7 +202,7 @@ contract XFI with Deployable, Ownable {
         self._mint_validate(ctx, msg.txid);
         if (msg.pass) {
             let cash: Int = msg.amount /2;
-            // send cash
+            // send cash 50% to receiver
             send(SendParameters{
                     to: self.master,
                     value: ton("0.05"),
@@ -165,7 +215,7 @@ contract XFI with Deployable, Ownable {
             let vault_address: Address = contractAddress(initCode);
             send(SendParameters{
                 to: vault_address,
-                body: "mint to vault".asComment(),
+                body: VaultAmount { value: msg.amount - cash }.toCell(),
                 value: ton("0.08"),             // pay for the deployment and leave some TON in the child for storage
                 mode: SendRemainingValue,
                 code: initCode.code,            // deploy the child if needed
@@ -210,7 +260,7 @@ contract XFI with Deployable, Ownable {
             let _position: Int = parser.loadUint(1);
             let sb: StringBuilder = beginString();
 
-            if (_position == 0) {
+            if (_position == 1) {
                 sb.append(_hash.toString());
                 sb.append(current_hash);
             } else {
@@ -235,7 +285,7 @@ contract XFI with Deployable, Ownable {
     }
 
     inline fun calculate_vault_init(owner: Address): StateInit {
-        return initOf TokenVault(owner, myAddress());
+        return initOf TokenVault(owner, self.master);
     }
 
     // get function
@@ -263,21 +313,35 @@ contract XFI with Deployable, Ownable {
     // just for test
     //==================================================
 
-    get fun testmint(msg: UserMint): Address {
+    get fun testMerkle(msg: UserMint): String {
         // Merkle tree verification
-        let target_hash: String = self.calculate_transaction_hash(msg.index, msg.to_str, msg.amount);
-        require(self.verify_proof(target_hash, msg.proof, msg.proof_length), "Merkle verification failed.");
-        let init: StateInit = self.calculate_transaction_validator_init(msg.index);
-        return contractAddress(init);
-        // send(SendParameters{
-        //         to: contractAddress(init),
-        //         value: 0,
-        //         mode: SendRemainingValue,
-        //         body: TransactionCheck{to: msg.to, amount: msg.amount}.toCell(),
-        //         code: init.code,
-        //         data: init.data
-        //     }
-        // );
+        let current_hash: String = self.calculate_transaction_hash(msg.index, msg.to_str, msg.amount);
+        let frist_cell: Bool = true; 
+        let parser : Slice = msg.proof.beginParse();
+        repeat (msg.proof_length) {
+            if (!frist_cell) {
+                if !parser.refsEmpty() {
+                    parser = parser.loadRef().beginParse();
+                }
+            }
+            let _hash: Int = parser.loadUint(128);
+            let _position: Int = parser.loadUint(1);
+            let sb: StringBuilder = beginString();
+
+            if (_position == 1) {
+                sb.append(_hash.toString());
+                sb.append(current_hash);
+            } else {
+                sb.append(current_hash);
+                sb.append(_hash.toString());
+            }
+
+            current_hash = self.sha128(sb.toString());
+            frist_cell = false;
+        }
+
+        return current_hash;
+
     }
     
 }

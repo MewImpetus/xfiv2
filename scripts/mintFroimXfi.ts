@@ -13,11 +13,11 @@ export async function run(provider: NetworkProvider, args: string[]) {
     // 发送挖矿消息
     let cell2: Cell = beginCell()
         .storeUint(172282571249944562391355093940656328312n, 128)
-        .storeUint(1, 1).endCell();
+        .storeUint(0, 1).endCell();
 
     let cell1: Cell = beginCell().storeRef(cell2)
         .storeUint(144943127676063095663117939959419744222n, 128)
-        .storeUint(1, 1).endCell();
+        .storeUint(0, 1).endCell();
 
     await xFI.send(
         provider.sender(),

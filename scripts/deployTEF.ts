@@ -16,6 +16,7 @@ export async function run(provider: NetworkProvider) {
 
     const tEF = provider.open(await TEF.fromInit(
         Address.parse("UQAkZEqn5O4_yI3bCBzxpLEsO1Z10QSGDK5O4buL9nQrWNAs"),
+        toNano(1000000000),
         content,
     ));
 

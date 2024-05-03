@@ -21,20 +21,21 @@ export async function run(provider: NetworkProvider) {
         admin: Address.parse("UQAVWJbfEIGvKOht-utclCtzpnitbaWm70HwRa24NoTpUJ9C"),
         max_mint_today: toNano(10000000),
         minted_today: 0n,
+        max_supply: toNano(1000000000)
     }));
 
-    // await xFI.send(
-    //     provider.sender(),
-    //     {
-    //         value: toNano('0.05'),
-    //     },
-    //     {
-    //         $$type: 'Deploy',
-    //         queryId: 0n,
-    //     }
-    // );
+    await xFI.send(
+        provider.sender(),
+        {
+            value: toNano('0.05'),
+        },
+        {
+            $$type: 'Deploy',
+            queryId: 0n,
+        }
+    );
 
-    // await provider.waitForDeploy(xFI.address);
+    await provider.waitForDeploy(xFI.address);
 
     // run methods on `xFI`
 
