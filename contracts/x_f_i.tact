@@ -5,13 +5,28 @@ import "./t_e_f";
 struct MintConfig {
     merkle_root : String;
     set_at : Int as uint32 = 0;
-    set_interval: Int as uint32 = 24 * 3600;
+    set_interval: Int as uint32 = 24;  // TODO * 3600
     admin : Address;
     max_mint_today : Int as uint64;  // Maximum mintable today
     minted_today : Int as uint64;   // minted amount today
     max_supply: Int as coins;       // Max supply
 }
 
+message MerkleRoot {
+    value: String;
+}
+
+message MerkleAdmin {
+    value: Address;
+}
+
+message SetInterval {
+    value: Int;
+}
+
+message MaxMintPerDay {
+    value: Int;
+}
 
 message UserMint {
     index: Int;
@@ -288,6 +303,32 @@ contract XFI with Deployable, Ownable {
         return initOf TokenVault(owner, self.master);
     }
 
+    // change some settings
+    //==================================================
+    receive(msg: MerkleRoot) {
+        require(sender() == self.mint_config.admin, "Merkle Admin use only");
+        require(now() - self.mint_config.set_at > self.mint_config.set_interval, "Setting Time Not Yet Cooled Down");
+        self.mint_config.merkle_root = msg.value;
+        self.mint_config.set_at = now();
+        self.mint_config.minted_today = 0;
+    }
+
+    receive(msg: MerkleAdmin) {
+        self.requireOwner();
+        self.mint_config.admin = msg.value;
+    }
+
+    receive(msg: SetInterval) {
+        self.requireOwner();
+        self.mint_config.set_interval = msg.value;
+    }
+
+    receive(msg: MaxMintPerDay) {
+        self.requireOwner();
+        self.mint_config.max_mint_today = msg.value;
+    }
+
+
     // get function
     //==================================================
     get fun get_jetton_master(): Address {
@@ -308,9 +349,12 @@ contract XFI with Deployable, Ownable {
         return contractAddress(initCode);
     }
 
+    get fun get_mint_config(): MintConfig {
+        return self.mint_config;
+    }
 
 
-    // just for test
+    // just for test TODO remove
     //==================================================
 
     get fun testMerkle(msg: UserMint): String {

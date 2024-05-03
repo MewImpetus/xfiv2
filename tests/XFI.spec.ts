@@ -17,7 +17,7 @@ describe('XFI', () => {
     let xFI: SandboxContract<XFI>;
     let tV: SandboxContract<TransactionValidator>;
     let tokenVault: SandboxContract<TokenVault>;
-    
+
     const merkle_root = "147596663615302291649424969521479109454"
 
     beforeEach(async () => {
@@ -26,7 +26,7 @@ describe('XFI', () => {
         alice = await blockchain.treasury('alice');
         bob = await blockchain.treasury('bob');
         cat = await blockchain.treasury('cat');
-        
+
         const jettonParams = {
             name: "jettonMaster1",
             description: "jettonMaster (TEF) is an innovative social media mining platform that aims to provide social media users with a share to earn channel by combining AI technology and blockchain token economics.",
@@ -157,7 +157,7 @@ describe('XFI', () => {
         });
 
         // Ensure the contract is created and the txid is set.
-        const tV =  blockchain.openContract(TransactionValidator.fromAddress(exist_check_address));
+        const tV = blockchain.openContract(TransactionValidator.fromAddress(exist_check_address));
         const txid = await tV.getGetTxid()
         expect(txid).toEqual(123n)
         const pass = await tV.getGetPass()
@@ -282,7 +282,7 @@ describe('XFI', () => {
         // check vault wallet Balance (minus 2000)
         const vaultBalanceAfter = (await vaultJettonContract.getGetWalletData()).balance;
         console.log("vaultBalanceAfter:", vaultBalanceAfter)
-        
+
         // check deployer wallet balance (get 1800, because burns 2000)
         const deployerWalletAddress = await tEF.getGetWalletAddress(deployer.address);
         const deployerwalletContract = blockchain.openContract(TEFWallet.fromAddress(deployerWalletAddress));
@@ -304,4 +304,106 @@ describe('XFI', () => {
         // console.log("deployer", deployer.address)
 
     });
+
+
+    it('Test: change settings', async () => {
+        let settingResult = await xFI.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "MerkleAdmin",
+                value: alice.address
+            }
+        )
+
+        settingResult = await xFI.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "SetInterval",
+                value: 10n
+            }
+        )
+
+        settingResult = await xFI.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "MaxMintPerDay",
+                value: 999999n
+            }
+        )
+
+        const config = await xFI.getGetMintConfig();
+        expect(config.admin.toString()).toEqual(alice.address.toString())
+        expect(config.max_mint_today).toEqual(999999n)
+        expect(config.set_interval).toEqual(10n)
+        console.log("config:", config)
+
+        settingResult = await xFI.send(
+            alice.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "MerkleAdmin",
+                value: alice.address
+            }
+        )
+        // alice can not set admin
+        expect(settingResult.transactions).toHaveTransaction({
+            from: alice.address,
+            to: xFI.address,
+            success: false,
+        });
+
+        settingResult = await xFI.send(
+            deployer.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "MerkleRoot",
+                value: "174898846593089856318715427840949272234"
+            }
+        )
+        // others can not set the root
+        expect(settingResult.transactions).toHaveTransaction({
+            from: deployer.address,
+            to: xFI.address,
+            success: false,
+        });
+
+        settingResult = await xFI.send(
+            alice.getSender(),
+            {
+                value: toNano('0.5'),
+            },
+            {
+                $$type: "MerkleRoot",
+                value: "174898846593089856318715427840949272234"
+            }
+        )
+
+        // alice can set the root
+        expect(settingResult.transactions).toHaveTransaction({
+            from: alice.address,
+            to: xFI.address,
+            success: true,
+        });
+
+
+
+        
+
+        
+
+    });
+
 });
