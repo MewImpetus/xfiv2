@@ -6,7 +6,7 @@ XFI is an innovative social media mining platform that aims to provide social me
 
 
 ## Agent Contract
-- TestNet Address: [EQDnjzyoV7fWSh6TrpC-U1BGLBBvOCXogdCy8kl4nvLlvFQg](https://testnet.tonscan.org/address/EQDnjzyoV7fWSh6TrpC-U1BGLBBvOCXogdCy8kl4nvLlvFQg)
+- TestNet Address: [EQDhthruapwuo_Lx96MW2tNBx6RYOEvHz7q1pSXrUR4M_dup](https://testnet.tonscan.org/address/EQDhthruapwuo_Lx96MW2tNBx6RYOEvHz7q1pSXrUR4M_dup)
 
 ## Jetton on network metadata
 1. Name (usually 1-3 words)：Tweetfi 
@@ -18,7 +18,7 @@ XFI is an innovative social media mining platform that aims to provide social me
 ![](./logo.png)
 
 ### TestNet Address
-TEF Master: [0QDJ_8-DRLoS9IogLyjoDuh3bGFSLobfQPGT4TfjNi1lmCx5](https://testnet.tonviewer.com/kQDJ_8-DRLoS9IogLyjoDuh3bGFSLobfQPGT4TfjNi1lmHG8?section=jetton) 
+TEF Master: [0QDkaa8AJPl3_n2v-UBBUUNXWbsUH9xev21p3dN0KPCxeDIo](https://testnet.tonviewer.com/kQDkaa8AJPl3_n2v-UBBUUNXWbsUH9xev21p3dN0KPCxeG_t?section=jetton) 
 ![alt text](image.png)
 
 ## How to use
