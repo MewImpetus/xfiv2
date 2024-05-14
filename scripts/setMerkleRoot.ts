@@ -20,8 +20,6 @@ const Sleep = (ms: number)=> {
     const walletContract = client.open(wallet);
     const walletSender = walletContract.sender(key.secretKey);
 
-    // open the contract address
-    let admin = Address.parse("EQDY-uI3LXl12N1cBduBMN911HM3MdPMijWxLnZPOpbMX6Fi");
 
     let contract = XFI.fromAddress(Address.parse("EQDhthruapwuo_Lx96MW2tNBx6RYOEvHz7q1pSXrUR4M_dup"));
     let xfi = client.open(contract);
